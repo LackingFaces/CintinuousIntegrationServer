@@ -1,4 +1,5 @@
 #!/usr/bin/python
+import traceback
 import argparse, datetime, os, psycopg2, subprocess, sys, collections
 import tempfile
 import shutil
@@ -82,7 +83,7 @@ try:
 			ac = json.loads(open(args.file).read())
 		else:
 			ac = os.environ
-		conn = psycopg2.connect(database=ac['LF_DB_NAME'], user=ac['LF_DB_USER'], password=ac['LF_DB_PASSWORD'], host=ac['LF_DB_HOST'], port=ac['LF_DB_PORT'])
+		conn = psycopg2.connect(database=ac['LF_DB_NAME'], user=ac['LF_DB_USER'], password=ac['LF_DB_PASSWORD'])
 		cur = conn.cursor()
 		conn.autocommit = True
 		return (conn, cur)
@@ -108,7 +109,6 @@ try:
 		projects = cur.fetchall()
 		print "Projects to process:", len(projects)
 		for Id, directory in projects:	
-		
 			remote = str(subprocess.check_output("cd "+directory+" && git remote -v", shell=True)).split('\t')[1].split(" ")[0]
 			print "["+time_now()+"+] Starting verification for project",os.path.basename(directory)
 			dirpath = tempfile.mkdtemp() 
@@ -153,7 +153,7 @@ try:
 				for etest in stest['build']:
 					resp += "Testing " + etest+"\n\n"
 					print "Testing",etest
-					popen = subprocess.Popen("cd "+dirpath+" && "+stest['build'][etest] , stderr=subprocess.STDOUT, stdout=subprocess.PIPE, universal_newlines=True, shell=True)
+					popen = subprocess.Popen(". ~/.bashrc && cd "+dirpath+" && "+stest['build'][etest] , stderr=subprocess.STDOUT, stdout=subprocess.PIPE, universal_newlines=True, shell=True)
 					stdout_lines = iter(popen.stdout.readline, "")
 					for stdout_line in stdout_lines:
 						print stdout_line,
@@ -168,7 +168,7 @@ try:
 				cur.execute("INSERT INTO CI_Commit_History (hash, date, status, project, cli_response) VALUES (%s, %s, %s, %s, %s)",
 (lastHash,datetime.datetime.now(), 'APROVED' if verificationSuccess else 'REPROVED_FAILED_TEST', Id, resp))	
 				if verificationSuccess:
-					subprocess.call("cd "+directory+" && git pull", shell=True)
+					subprocess.call("cd "+directory+" && git pull origin master", shell=True)
 					print "Verification and Deploy succefuly made"
 			else:
 				print "[!] No valid .lackingfaces_ci.yaml file for test!"
@@ -178,7 +178,4 @@ try:
 except Exception as e:
 	logger.exception(e)
 	print "Error!\n"+str(e)
-
-
-
-
+	traceback.print_exc()

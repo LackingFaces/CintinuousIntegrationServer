@@ -1,8 +1,9 @@
 #!/bin/bash
-sudo python setup.py install
-path=$(pwd)/continuous_integration.py
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+sudo python $DIR/setup.py install
+path=$DIR/continuous_integration.py
 binAlias="cintegration $1 $2"
-min='2'
+min='10'
 varLog=~/.cintegration/log
 mkdir ~/.cintegration 2>&1
 if crontab -l 2> /dev/null | grep -q "$binAlias"; then
