@@ -1,0 +1,17 @@
+#!/bin/bash
+sudo python setup.py install
+path=$(pwd)/continuous_integration.py
+binAlias="cintegration $1 $2"
+min='2'
+varLog=~/.cintegration/log
+mkdir ~/.cintegration 2>&1
+if crontab -l 2> /dev/null | grep -q "$binAlias"; then
+	echo "[END] Command is in cron, nothing to do."
+else
+		sudo ln -sf $path /usr/bin/$binAlias
+		echo '[+] Command alias added to bin foder, use `cintegration` to comunicate'	
+		echo "[+] Log file is located at $varLog"	
+		(crontab -l 2>/dev/null; echo "SHELL=/bin/bash") | crontab -
+		(crontab -l 2>/dev/null; echo "*/$min * * * * $binAlias >> $varLog 2>&1") | crontab -
+		echo "[+] Command added to cron, will execute every $min minutes"
+fi
